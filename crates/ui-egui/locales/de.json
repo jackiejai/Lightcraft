@@ -1891,5 +1891,6 @@
   "ONNX model": "ONNX model",
   "commercial use subject to GPL conditions": "commercial use subject to GPL conditions",
   "Show less": "Weniger anzeigen",
-  "Quit while tasks are running?": "Beenden, während Aufgaben laufen?"
+  "Quit while tasks are running?": "Beenden, während Aufgaben laufen?",
+  "Reading folder": "Ordner wird gelesen"
 }

@@ -1736,5 +1736,6 @@
   "ONNX model": "ONNX model",
   "commercial use subject to GPL conditions": "commercial use subject to GPL conditions",
   "Show less": "收合",
-  "Quit while tasks are running?": "要在工作執行時結束嗎？"
+  "Quit while tasks are running?": "要在工作執行時結束嗎？",
+  "Reading folder": "正在讀取檔案夾"
 }
