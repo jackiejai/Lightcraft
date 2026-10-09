@@ -82,6 +82,10 @@ pub fn show(app: &mut LightcraftApp, ctx: &egui::Context) {
         Dialog::LabelNames { .. } => "Edit Color Label Names",
         Dialog::CaptureTime { .. } => "Edit Capture Time",
         Dialog::RenameKeyword { .. } => "Rename Keyword",
+        Dialog::KeywordTag { editing: None, .. } => "Create Keyword Tag",
+        Dialog::KeywordTag { .. } => "Edit Keyword Tag",
+        Dialog::DeleteKeyword { .. } => "Delete Keyword",
+        Dialog::MoveKeyword { .. } => "Merge Keywords",
         Dialog::MergeKeywords { .. } => "Merge Keywords",
         Dialog::NewSmartAlbum { .. } => "Create Smart Album",
         Dialog::AllMetadata { .. } => "All Metadata",
@@ -260,9 +264,7 @@ pub fn show(app: &mut LightcraftApp, ctx: &egui::Context) {
                     );
                 }
                 Dialog::NewSmartAlbum { name, .. } => {
-                    let r = ui.add(egui::TextEdit::singleline(name).hint_text(crate::i18n::tr("Name")).desired_width(f32::INFINITY));
-                    r.request_focus();
-                    if r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                    if dialog_field(ui, "field:smartAlbumName", name, "Name") {
                         confirm = true;
                     }
                     let rules = app.session.view_rules();
@@ -410,10 +412,7 @@ pub fn show(app: &mut LightcraftApp, ctx: &egui::Context) {
                 }
                 Dialog::RenameKeyword { from, to } => {
                     let n = app.session.catalog.photos().filter(|p| p.meta.keywords.iter().any(|k| lightcraft_catalog::keywords::is_under(k, from))).count();
-                    let r = ui.add(egui::TextEdit::singleline(to).hint_text(crate::i18n::tr("New name")).desired_width(f32::INFINITY));
-                    crate::widgets::register(ui.ctx(), "field:keywordName", r.rect);
-                    r.request_focus();
-                    if r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                    if dialog_field(ui, "field:keywordName", to, "New name") {
                         confirm = true;
                     }
                     ui.label(
@@ -424,10 +423,7 @@ pub fn show(app: &mut LightcraftApp, ctx: &egui::Context) {
                 }
                 Dialog::MergeKeywords { from, into } => {
                     ui.label(egui::RichText::new(crate::i18n::tr_format!("Replace {} with:", from.iter().map(|f| format!("“{f}”")).collect::<Vec<_>>().join(", "))).color(t.text_label));
-                    let r = ui.add(egui::TextEdit::singleline(into).hint_text(crate::i18n::tr("Keyword")).desired_width(f32::INFINITY));
-                    crate::widgets::register(ui.ctx(), "field:keywordInto", r.rect);
-                    r.request_focus();
-                    if r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                    if dialog_field(ui, "field:keywordInto", into, "Keyword") {
                         confirm = true;
                     }
                     let options: Vec<String> = app
@@ -446,16 +442,12 @@ pub fn show(app: &mut LightcraftApp, ctx: &egui::Context) {
                     });
                 }
                 Dialog::TextPrompt { value, hint, .. } => {
-                    let r = ui.add(egui::TextEdit::singleline(value).hint_text(crate::i18n::tr(hint.as_str())).desired_width(f32::INFINITY));
-                    r.request_focus();
-                    if r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                    if dialog_field(ui, "field:prompt", value, hint) {
                         confirm = true;
                     }
                 }
                 Dialog::NewAlbum { name, .. } | Dialog::RenameAlbum { name, .. } => {
-                    let r = ui.add(egui::TextEdit::singleline(name).hint_text(crate::i18n::tr("Name")).desired_width(f32::INFINITY));
-                    r.request_focus();
-                    if r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                    if dialog_field(ui, "field:albumName", name, "Name") {
                         confirm = true;
                     }
                 }
@@ -723,6 +715,91 @@ pub fn show(app: &mut LightcraftApp, ctx: &egui::Context) {
                 Dialog::Import { opts } => crate::import::body(app, ui, opts),
                 Dialog::Settings { tab } => crate::panels::settings::body(app, ui, tab),
                 Dialog::SamModel { error, .. } => sam_model_body(app, ui, error.as_deref()),
+                Dialog::KeywordTag {
+                    editing,
+                    name,
+                    parent,
+                    inside,
+                    synonyms,
+                    include_on_export,
+                    export_containing,
+                    export_synonyms,
+                    person,
+                    add_to_selected,
+                } => {
+                    ui.label(egui::RichText::new(crate::i18n::tr("Keyword Name")).color(t.text_dim));
+                    // several fields: the name takes the focus when the dialog opens, not after
+                    let r = crate::text_field::TextField::singleline("field:keywordTagName", name)
+                        .hint(crate::i18n::tr("Keyword Name"))
+                        .width(f32::INFINITY)
+                        .select_on_focus(true)
+                        .show(ui);
+                    if just_opened(ui, "keyword-tag") {
+                        r.response.request_focus();
+                    }
+                    if r.ending == Some(crate::text_field::Ending::Return) {
+                        confirm = true;
+                    }
+                    ui.add_space(4.0);
+                    ui.label(egui::RichText::new(crate::i18n::tr("Synonyms")).color(t.text_dim));
+                    // Return in either field creates (or saves) the keyword
+                    let r = crate::text_field::TextField::singleline("field:keywordSynonyms", synonyms)
+                        .hint(crate::i18n::tr("Separated by commas"))
+                        .width(f32::INFINITY)
+                        .show(ui);
+                    if r.ending == Some(crate::text_field::Ending::Return) {
+                        confirm = true;
+                    }
+                    ui.add_space(6.0);
+                    if editing.is_none() {
+                        if let Some(p) = parent {
+                            let r = ui.checkbox(inside, crate::i18n::tr_format!("Put inside “{parent}”", parent = p.replace('|', " › ")));
+                            crate::widgets::register(ui.ctx(), "check:keywordInside", r.rect);
+                        }
+                        let n = app.session.selection.ids.len();
+                        let r = ui.add_enabled(n > 0, egui::Checkbox::new(add_to_selected, crate::i18n::tr("Add to Selected Photos")));
+                        crate::widgets::register(ui.ctx(), "check:keywordAddToSelected", r.rect);
+                        ui.add_space(4.0);
+                    }
+                    ui.label(egui::RichText::new(crate::i18n::tr("Keyword Tag Options")).color(t.text_dim));
+                    for (on, label, id) in [
+                        (include_on_export, "Include on Export", "check:keywordIncludeOnExport"),
+                        (export_containing, "Export Containing Keywords", "check:keywordExportContaining"),
+                        (export_synonyms, "Export Synonyms", "check:keywordExportSynonyms"),
+                        (person, "Person", "check:keywordPerson"),
+                    ] {
+                        let r = ui.checkbox(on, crate::i18n::tr(label));
+                        crate::widgets::register(ui.ctx(), id, r.rect);
+                    }
+                }
+                Dialog::MoveKeyword { keyword, parent } => {
+                    let name = keyword.rsplit('|').next().unwrap_or(keyword);
+                    match parent {
+                        Some(p) => ui.label(crate::i18n::tr_format!(
+                            "“{parent}” has a “{name}” already. Merge the two?",
+                            parent = p.replace('|', " › "),
+                            name = name
+                        )),
+                        None => ui.label(crate::i18n::tr_format!("There is a “{name}” at the top level already. Merge the two?", name = name)),
+                    };
+                    ui.label(egui::RichText::new(crate::i18n::tr("Their photos and the keywords below them come together under one keyword.")).color(t.text_dim));
+                }
+                Dialog::DeleteKeyword { keyword, count } => {
+                    let name = keyword.replace('|', " › ");
+                    ui.label(crate::i18n::tr_format!("Delete the keyword “{name}”?", name = name));
+                    ui.label(
+                        egui::RichText::new(if *count == 0 {
+                            crate::i18n::tr("No photo has it; the keywords below it go too.").to_string()
+                        } else {
+                            crate::i18n::tr_format!(
+                                "It is taken off {count} photo{}, with the keywords below it. Undo brings it back.",
+                                if *count == 1 { "" } else { "s" },
+                                count = count
+                            )
+                        })
+                        .color(t.text_dim),
+                    );
+                }
                 Dialog::ConfirmDelete { count } => {
                     let what = if *count == 1 { crate::i18n::tr("this photo").to_string() } else { crate::i18n::tr_format!("these {count} photos", count = count) };
                     ui.label(crate::i18n::tr_format!("Move {what} to Recently Deleted?", what = what));
@@ -826,7 +903,11 @@ pub fn show(app: &mut LightcraftApp, ctx: &egui::Context) {
                     Dialog::DenoiseModel { .. } => "Install",
                     Dialog::FaceModel { info, .. } if !informational && info["download"].is_string() => "Download",
                     Dialog::FaceModel { .. } if !informational => "Install",
-                    Dialog::ConfirmDelete { .. } => "Delete",
+                    Dialog::ConfirmDelete { .. } | Dialog::DeleteKeyword { .. } => "Delete",
+                    // (not "Merge": that is photo merging, HDR / panorama, in some languages)
+                    Dialog::MoveKeyword { .. } => "Merge Keywords",
+                    Dialog::KeywordTag { editing: None, .. } => "Create",
+                    Dialog::KeywordTag { .. } => "Save",
                     Dialog::RemoveFolder { .. } => "Remove",
                     Dialog::SamModel { then: Some(_), .. } if sam_installed => "Continue",
                     Dialog::SamModel { .. } if sam_installed || sam_running || sam_nowhere => "",
@@ -873,6 +954,7 @@ pub fn show(app: &mut LightcraftApp, ctx: &egui::Context) {
                         | Dialog::NewAlbum { .. }
                         | Dialog::NewSmartAlbum { .. }
                         | Dialog::SmartRules { .. }
+                        | Dialog::KeywordTag { .. }
                 ) =>
             {
                 app.toast(ctx, e)
@@ -1065,6 +1147,57 @@ pub fn confirm_dialog(app: &mut LightcraftApp, dlg: &Dialog) -> Result<serde_jso
         }
         Dialog::Rename { template, start } => app.run("photo.rename", json!({"template": template, "start": start})),
         Dialog::RenameKeyword { from, to } => app.run("keyword.rename", json!({"from": from, "to": to})),
+        Dialog::KeywordTag {
+            editing,
+            name,
+            parent,
+            inside,
+            synonyms,
+            include_on_export,
+            export_containing,
+            export_synonyms,
+            person,
+            add_to_selected,
+        } => {
+            let mut params = json!({
+                "synonyms": synonyms.split(',').map(str::trim).filter(|s| !s.is_empty()).collect::<Vec<_>>(),
+                "includeOnExport": include_on_export,
+                "exportContaining": export_containing,
+                "exportSynonyms": export_synonyms,
+                "person": person,
+            });
+            match editing {
+                Some(keyword) => {
+                    params["keyword"] = json!(keyword);
+                    params["name"] = json!(name);
+                    let r = app.run("keyword.edit", params);
+                    if r.is_ok() {
+                        let to = match keyword.rsplit_once('|') {
+                            Some((parent, _)) => format!("{parent}|{}", name.trim()),
+                            None => name.trim().to_string(),
+                        };
+                        crate::panels::keyword_list::follow(app, keyword, &to);
+                    }
+                    r
+                }
+                None => {
+                    params["name"] = json!(name);
+                    params["parent"] = if *inside { json!(parent) } else { serde_json::Value::Null };
+                    params["addToSelected"] = json!(add_to_selected);
+                    app.run("keyword.create", params)
+                }
+            }
+        }
+        Dialog::DeleteKeyword { keyword, .. } => app.run("keyword.delete", json!({"keyword": keyword})),
+        Dialog::MoveKeyword { keyword, parent } => {
+            let r = app.run("keyword.move", json!({"keyword": keyword, "parent": parent, "merge": true}));
+            if r.is_ok() {
+                let leaf = keyword.rsplit('|').next().unwrap_or(keyword);
+                let to = parent.as_deref().map_or_else(|| leaf.to_string(), |p| format!("{p}|{leaf}"));
+                crate::panels::keyword_list::follow(app, keyword, &to);
+            }
+            r
+        }
         Dialog::MergeKeywords { from, into } => app.run("keyword.merge", json!({"from": from, "into": into})),
         Dialog::AutoStack { gap } => app.run("stack.auto", json!({"gap": gap})),
         Dialog::DenoiseModel { info, accepted } => crate::panels::denoise::install(app, info, *accepted),
@@ -1294,4 +1427,26 @@ fn choices<V: PartialEq + Copy>(ui: &mut egui::Ui, label: &str, id: &str, option
             }
         }
     });
+}
+
+/// A dialog's one text field: it keeps the focus (except while its own menu has it) and opens
+/// with its text selected, so typing replaces it. True when Return confirms the dialog; Esc
+/// cancels the dialog (`show`). Taking the focus back with a bare `TextEdit` every frame hid the
+/// focus Return gives up, and Return did nothing.
+fn dialog_field(ui: &mut egui::Ui, widget: &str, text: &mut String, hint: &str) -> bool {
+    let r = crate::text_field::TextField::singleline(widget, text).hint(crate::i18n::tr(hint)).width(f32::INFINITY).select_on_focus(true).show(ui);
+    if !r.editing {
+        r.response.request_focus();
+    }
+    r.ending == Some(crate::text_field::Ending::Return)
+}
+
+/// The dialog part `key` is drawn this frame but wasn't the frame before: the dialog has just
+/// opened (to give its first field the focus once).
+fn just_opened(ui: &egui::Ui, key: &str) -> bool {
+    let id = egui::Id::new(("dialog-shown", key));
+    let pass = ui.ctx().cumulative_pass_nr();
+    let last: Option<u64> = ui.data_mut(|d| d.get_temp(id));
+    ui.data_mut(|d| d.insert_temp(id, pass));
+    last.and_then(|l| l.checked_add(1)) != Some(pass)
 }

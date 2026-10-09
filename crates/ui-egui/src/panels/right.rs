@@ -19,6 +19,18 @@ pub fn show(app: &mut LightcraftApp, ui: &mut egui::Ui) {
     let width = app.ui.right_width;
     let resized = super::resizable_side(ui, false, "right_panel", frame, width, crate::state::RIGHT_WIDTH, reserve, |ui| {
         let Some(id) = app.session.active() else {
+            // the Keyword List is the library's, not a photo's: it is there without a selection
+            if app.ui.right == RightPanel::Keywords {
+                egui::ScrollArea::vertical().id_salt("right-scroll").auto_shrink([false, false]).show(ui, |ui| {
+                    ui.spacing_mut().item_spacing.y = 0.0;
+                    header(ui, "Keywords");
+                    padded(ui, |ui| {
+                        ui.label(egui::RichText::new(crate::i18n::tr("Select photos to give them keywords.")).color(t.text_dim));
+                    });
+                    super::keyword_list::show(app, ui);
+                });
+                return;
+            }
             let r = ui.max_rect();
             super::empty_message(ui, r, "No photo selected", "Select a photo to edit");
             return;
@@ -734,15 +746,21 @@ fn meta_field(app: &mut LightcraftApp, ui: &mut egui::Ui, label: &str, key: &str
     ui.label(egui::RichText::new(crate::i18n::tr(label)).size(11.5).color(t.text_dim));
     let id = egui::Id::new(("info-field", key));
     let mut text: String = ui.data(|d| d.get_temp(id)).unwrap_or_else(|| value.to_string());
-    let edit = if lines > 1 { egui::TextEdit::multiline(&mut text).desired_rows(lines) } else { egui::TextEdit::singleline(&mut text) };
-    let r = ui.add(edit.desired_width(f32::INFINITY));
-    register(ui.ctx(), format!("field:{key}"), r.rect);
-    if r.has_focus() {
+    let widget = format!("field:{key}");
+    let field = if lines > 1 {
+        crate::text_field::TextField::multiline(&widget, &mut text).rows(lines)
+    } else {
+        crate::text_field::TextField::singleline(&widget, &mut text)
+    };
+    let r = field.width(f32::INFINITY).show(ui);
+    // the typed text outlives frames while it is edited (the photo's value is drawn otherwise)
+    if r.editing {
         ui.data_mut(|d| d.insert_temp(id, text.clone()));
     } else {
         ui.data_mut(|d| d.remove::<String>(id));
     }
-    if r.lost_focus() && text != value {
+    // Return (one line) or leaving saves; Esc gives the edit up
+    if r.committed() && text != value {
         let _ = app.run("photo.setMeta", json!({key: text}));
     }
     ui.add_space(6.0);
@@ -758,7 +776,8 @@ fn keywords(app: &mut LightcraftApp, ui: &mut egui::Ui, id: PhotoId) {
         let r = ui.add(egui::TextEdit::singleline(&mut text).hint_text(crate::i18n::tr("Add keyword")).desired_width(f32::INFINITY));
         register(ui.ctx(), "field:keyword", r.rect);
         if r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) && !text.trim().is_empty() {
-            let kws: Vec<String> = text.split(',').map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).collect();
+            // a new name goes inside the default parent (Put New Keywords Inside This Keyword)
+            let kws: Vec<String> = text.split(',').map(|s| app.session.catalog.typed_keyword(s)).filter(|s| !s.is_empty()).collect();
             let _ = app.run("photo.setMeta", json!({"addKeywords": kws}));
             text.clear();
         }
@@ -834,6 +853,7 @@ fn keywords(app: &mut LightcraftApp, ui: &mut egui::Ui, id: PhotoId) {
             });
         }
     });
+    super::keyword_list::show(app, ui);
 }
 
 /// The keyword set: pick a set, then nine buttons (⌥1–⌥9) that toggle its keywords on the
