@@ -124,6 +124,7 @@ language_table! {
     Es, "es", "Español", "Latn", include_str!("../locales/es.json");
     De, "de", "Deutsch", "Latn", include_str!("../locales/de.json");
     Ru, "ru", "Русский", "Cyrl", include_str!("../locales/ru.json");
+    Fr, "fr", "Français", "Latn", include_str!("../locales/fr.json");
 }
 
 // The settings file stores the BCP-47 code (`"zh-hans"`), never the Rust variant name, so a
@@ -444,6 +445,9 @@ mod tests {
         assert_eq!(Locale::parse_tag("pt-BR"), Some(Locale::PtBr));
         assert_eq!(Locale::parse_tag("pt_BR.UTF-8"), Some(Locale::PtBr));
         assert_eq!(Locale::parse_tag("pt"), Some(Locale::PtBr));
+        assert_eq!(Locale::parse_tag("fr"), Some(Locale::Fr));
+        assert_eq!(Locale::parse_tag("fr-FR"), Some(Locale::Fr));
+        assert_eq!(Locale::parse_tag("fr_FR.UTF-8"), Some(Locale::Fr));
         for tag in ["de", "de-DE", "de_AT.UTF-8", "de-CH"] {
             assert_eq!(Locale::parse_tag(tag), Some(Locale::De), "{tag}");
         }
@@ -488,6 +492,9 @@ mod tests {
         set_language(Locale::Ja);
         assert_eq!(tr_format!("Imported {} photo{}", 12, "s"), "12枚を読み込みました");
         assert_eq!(tr_format!("Exported {ok} of {total} photo{}", "s", ok = 4, total = 12), "12枚中4枚を書き出しました");
+        set_language(Locale::Fr);
+        assert_eq!(tr_format!("Imported {} photo{}", 12, "s"), "12 photos importée(s)");
+        assert_eq!(tr_format!("Imported {} photo{}", 1, ""), "1 photo importée(s)");
         // Format specs survive translation: precision, sign, and values a language reorders.
         for language in Locale::ALL {
             set_language(*language);
@@ -590,6 +597,7 @@ mod tests {
             ("app.language.simplifiedChinese", Locale::ZhHans),
             ("app.language.japanese", Locale::Ja),
             ("app.language.portuguese", Locale::PtBr),
+            ("app.language.french", Locale::Fr),
             ("app.language.spanish", Locale::Es),
             ("app.language.german", Locale::De),
             ("app.language.russian", Locale::Ru),
