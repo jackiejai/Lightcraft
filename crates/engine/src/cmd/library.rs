@@ -339,7 +339,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Library Folders",
             [],
             None,
-            "{} → [{name, path, count, own, volume, selectable, children}] the disks and the folders the library's photos were imported from, with photo counts (subfolders included in `count`); show one with library.source {kind: libraryFolder, path} (rows with selectable false only open)",
+            "{} → [{name, path, count, own, volume, selectable, label?, children}] the disks and the folders the library's photos were imported from, with photo counts (subfolders included in `count`); show one with library.source {kind: libraryFolder, path} (rows with selectable false only open)",
             always,
             |s, _| Ok(serde_json::to_value(s.catalog.folder_tree()).unwrap_or_default())
         ),
@@ -385,6 +385,33 @@ pub fn specs() -> Vec<CommandSpec> {
                 let vis = s.visible_cloned();
                 s.selection = vis.first().map(|f| Selection::single(*f)).unwrap_or_default();
                 Ok(json!({"removed": ids.len()}))
+            }
+        ),
+        cmd!(
+            "folder.label",
+            "Set Folder Color Label",
+            [],
+            None,
+            "{path, label: red|yellow|green|blue|purple|none} — give a folder of the library (one its photos were imported from, see library.folders) a colour label, or take it off (also once its photos are gone); one undo step. The label follows the folder when it is renamed or moved with folder.rename / folder.move → {path, label}",
+            always,
+            |s, p| {
+                const C: &str = "folder.label";
+                let path = str_param(p, "path").filter(|d| !d.trim().is_empty()).ok_or_else(|| bad(C, "missing `path`"))?;
+                let label = match str_param(p, "label").ok_or_else(|| bad(C, "missing `label` (red|yellow|green|blue|purple|none)"))? {
+                    "none" => None,
+                    x => Some(ColorLabel::parse(x).ok_or_else(|| bad(C, format!("unknown label {x:?}")))?),
+                };
+                // taking a label off always works, also once the folder's photos are gone
+                let f = Filter { library_folder: Some(path.to_string()), ..Default::default() };
+                if label.is_some() && s.catalog.query(&f, &Sort::default()).is_empty() {
+                    return Err(bad(C, format!("{path}: no photo in the library was imported from it")));
+                }
+                if label.is_none() && s.catalog.folder_record(path).is_none() {
+                    return Ok(json!({"path": path, "label": label}));
+                }
+                let op = s.catalog.folder_label_op(path, label);
+                s.commit(if label.is_some() { "Set Folder Color Label" } else { "Remove Folder Color Label" }, op)?;
+                Ok(json!({"path": path, "label": label}))
             }
         ),
         cmd!("library.clearFilter", "Clear Filters", ["View"], None, "{}", always, |s, _| {
@@ -1296,7 +1323,7 @@ fn merge_rules(base: &lightcraft_catalog::Filter, patch: &Value, c: &str) -> Res
 /// Whether `path` lies above a disk: some of its `ids` photos are on a disk (not the startup
 /// disk) that the folder does not lie in. Such a folder (`/Volumes`, `/mnt`…) is not a folder of
 /// one disk but a way to reach several.
-fn covers_other_disks(s: &Session, path: &str, ids: &[PhotoId]) -> bool {
+pub(crate) fn covers_other_disks(s: &Session, path: &str, ids: &[PhotoId]) -> bool {
     ids.iter()
         .filter_map(|id| s.catalog.photo(*id))
         .filter_map(|p| lightcraft_catalog::folders::volume_of(p))
