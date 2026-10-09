@@ -1737,5 +1737,6 @@
   "commercial use subject to GPL conditions": "commercial use subject to GPL conditions",
   "Show less": "Mostrar menos",
   "Quit while tasks are running?": "Sair com tarefas em andamento?",
-  "Reading folder": "Lendo pasta"
+  "Reading folder": "Lendo pasta",
+  "Scanning folder": "Verificando pasta"
 }

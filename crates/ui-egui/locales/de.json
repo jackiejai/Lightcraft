@@ -1892,5 +1892,6 @@
   "commercial use subject to GPL conditions": "commercial use subject to GPL conditions",
   "Show less": "Weniger anzeigen",
   "Quit while tasks are running?": "Beenden, während Aufgaben laufen?",
-  "Reading folder": "Ordner wird gelesen"
+  "Reading folder": "Ordner wird gelesen",
+  "Scanning folder": "Ordner wird durchsucht"
 }

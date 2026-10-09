@@ -1410,5 +1410,6 @@
   "commercial use subject to GPL conditions": "commercial use subject to GPL conditions",
   "Show less": "Свернуть",
   "Quit while tasks are running?": "Выйти, пока выполняются задачи?",
-  "Reading folder": "Чтение папки"
+  "Reading folder": "Чтение папки",
+  "Scanning folder": "Сканирование папки"
 }
