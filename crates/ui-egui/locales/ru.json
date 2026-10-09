@@ -1408,5 +1408,6 @@
   "Pending photo action cancelled because its library or photo changed": "Pending photo action cancelled because its library or photo changed",
   "ONNX model": "ONNX model",
   "commercial use subject to GPL conditions": "commercial use subject to GPL conditions",
-  "Show less": "Свернуть"
+  "Show less": "Свернуть",
+  "Quit while tasks are running?": "Выйти, пока выполняются задачи?"
 }
