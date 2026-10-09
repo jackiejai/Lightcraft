@@ -1738,5 +1738,8 @@
   "Show less": "Mostrar menos",
   "Quit while tasks are running?": "Sair com tarefas em andamento?",
   "Reading folder": "Lendo pasta",
-  "Scanning folder": "Verificando pasta"
+  "Scanning folder": "Verificando pasta",
+  "Building previews": "Gerando prévias",
+  "Building smart previews": "Gerando prévias inteligentes",
+  "Discarding smart previews": "Descartando prévias inteligentes"
 }

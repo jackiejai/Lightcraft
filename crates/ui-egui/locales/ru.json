@@ -1411,5 +1411,8 @@
   "Show less": "Свернуть",
   "Quit while tasks are running?": "Выйти, пока выполняются задачи?",
   "Reading folder": "Чтение папки",
-  "Scanning folder": "Сканирование папки"
+  "Scanning folder": "Сканирование папки",
+  "Building previews": "Создание просмотров",
+  "Building smart previews": "Создание смарт-просмотров",
+  "Discarding smart previews": "Удаление смарт-просмотров"
 }

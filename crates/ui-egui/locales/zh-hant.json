@@ -1738,5 +1738,8 @@
   "Show less": "收合",
   "Quit while tasks are running?": "要在工作執行時結束嗎？",
   "Reading folder": "正在讀取檔案夾",
-  "Scanning folder": "正在掃描檔案夾"
+  "Scanning folder": "正在掃描檔案夾",
+  "Building previews": "正在建立預覽",
+  "Building smart previews": "正在建立智慧型預覽",
+  "Discarding smart previews": "正在捨棄智慧型預覽"
 }
