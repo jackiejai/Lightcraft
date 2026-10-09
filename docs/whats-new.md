@@ -2,6 +2,41 @@
 
 ## October 2026
 
+### Keywording box
+- The chips at the top of the Keywords panel are the keywords of every selected photo, not only the active one's; a
+  keyword only some of them have is marked with an asterisk (hover: how many). Only the × removes a keyword, from
+  every selected photo; a chip's menu acts on the selection (add to all, remove, show photos, edit) and no longer
+  deletes a keyword from the whole library.
+- Switch to & Containing to see the keywords with the keywords containing them, or to Will Export to see what
+  exported files will carry for the selection.
+- The keyword set's buttons and the suggestions follow the selection too; the typing boxes get the Cut / Copy / Paste
+  menu, and Return in the painter's box starts painting.
+
+### Keyword List
+- The Keywords panel ends with a Keyword List, as in Lightroom Classic: every keyword with its photo count, those no
+  photo has yet too. Filter it, tick a keyword to give it to the selected photos (a dash: only some have it), or click
+  the arrow to see its photos.
+- Create keywords with + (inside the one you picked, with synonyms, and given to the selection if you like), edit one
+  by double-clicking it, delete one with − after a confirmation. Right-click for more: create inside, Put New Keywords
+  Inside This Keyword, Purge Unused Keywords.
+- Drag a keyword onto another to nest it, or onto the list's title to bring it back to the top level; photos dragged
+  from the grid onto a keyword get it.
+- Right-click ▸ Put New Keywords Inside This Keyword: new keywords, made with + or typed in the box above, go inside
+  it. The list is there with no photo selected too, to set up keywords first.
+- Keyword tag options decide what exported files carry: Include on Export, Export Containing Keywords, Export
+  Synonyms. Exports now write keyword names to `dc:subject` and their paths to `lr:hierarchicalSubject`, and keywords
+  imported from files (or read from sidecars) keep the hierarchy `lr:hierarchicalSubject` gives them.
+
+### Text fields
+- Right-click Search Photos, a slider's typed value, the Info panel's fields, the name field of New Album, Rename
+  Album, New Smart Album, Rename Keyword, Merge Keywords and similar dialogs, or the name field under unnamed faces for
+  Cut, Copy, Paste and Select All. Esc in them gives back the text from before you started typing (in the Info panel it
+  no longer saves it). Return in those dialogs now confirms them, and their name opens selected. More fields will
+  follow.
+- On Windows and Linux, Ctrl+C outside a text field copies edit settings and Ctrl+V pastes them (⇧Ctrl+V: Paste
+  Selected Settings). Ctrl+V only reaches LightCraft while the system clipboard holds text; otherwise use Edit ▸ Paste Edit
+  Settings.
+
 ### Masking
 - Drag anywhere inside the selected radial gradient's ellipse to move it, including rotated
   ellipses and radial components in compound masks. Edge and rotation handles keep their existing

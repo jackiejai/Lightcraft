@@ -28,6 +28,7 @@ pub mod shortcuts;
 pub mod softpaint;
 pub mod state;
 pub mod tasks;
+pub mod text_field;
 pub mod theme;
 pub mod titlebar;
 pub mod widgets;
@@ -40,6 +41,10 @@ mod tests_filmstrip;
 mod tests_grid;
 #[cfg(test)]
 mod tests_keymap;
+#[cfg(test)]
+mod tests_keyword_list;
+#[cfg(test)]
+mod tests_keywording;
 #[cfg(test)]
 mod tests_labels;
 #[cfg(test)]
@@ -196,6 +201,8 @@ pub struct LightcraftApp {
     shadow: Option<headless::HeadlessView>,
     /// Synthetic input events (from the control channel) injected one step per frame.
     pub synthetic: Vec<egui::Event>,
+    /// The text the UI last put on the clipboard (`ui.inspect` → `copied`).
+    pub copied: Option<String>,
     /// Native file dialogs up for commands (`pick`): each command runs again when its closes.
     pub(crate) pending_picks: Vec<pick::Pending>,
     /// Modifiers announced for synthetic input (held from a button down to its release).
@@ -288,6 +295,7 @@ impl LightcraftApp {
             screenshot_token: 0,
             shadow: None,
             synthetic: vec![],
+            copied: None,
             pending_picks: vec![],
             synthetic_mods: egui::Modifiers::NONE,
             synthetic_mods_release: false,
@@ -882,7 +890,14 @@ impl LightcraftApp {
     }
 
     /// Frame timings once layout is done (`t0`: when layout started).
-    fn end_frame(&mut self, t0: f64) {
+    fn end_frame(&mut self, ctx: &egui::Context, t0: f64) {
+        ctx.output(|o| {
+            for c in &o.commands {
+                if let egui::OutputCommand::CopyText(text) = c {
+                    self.copied = Some(text.clone());
+                }
+            }
+        });
         self.perf.frame_ms = now_ms() - t0;
         self.perf.update_ms = self.perf.logic_ms + self.perf.frame_ms;
         self.perf.max_update_ms = self.perf.max_update_ms.max(self.perf.update_ms);
@@ -912,7 +927,7 @@ impl LightcraftApp {
             panels::library_problem::show(self, &ctx);
             panels::toast(self, &ctx);
             self.widgets = widgets::take_registry(&ctx);
-            self.end_frame(t0);
+            self.end_frame(&ctx, t0);
             return;
         }
         // Order matters: earlier panels take the full edge (top bar spans the window; the tool strip,
@@ -956,9 +971,10 @@ impl LightcraftApp {
         pick::poll(self, &ctx);
         panels::grid::drag_feedback(self, &ctx);
         panels::left::album_drag_feedback(self, &ctx);
+        panels::keyword_list::drag_feedback(self, &ctx);
         panels::toast(self, &ctx);
         self.widgets = widgets::take_registry(&ctx);
-        self.end_frame(t0);
+        self.end_frame(&ctx, t0);
     }
 }
 
@@ -1064,6 +1080,13 @@ mod drop_tests {
 #[derive(Default)]
 pub struct Caches {
     keyword_tree: Option<(u64, std::sync::Arc<Vec<lightcraft_catalog::KeywordNode>>)>,
+    /// The Keywording box's read-only names (with containing keywords, or Will Export), by library
+    /// revision, selection and view.
+    keyword_names: Option<(u64, u64, std::sync::Arc<Vec<panels::keywording::Chip>>)>,
+    /// The Keywording box's chips, by library revision and selection.
+    keyword_chips: Option<(u64, u64, std::sync::Arc<Vec<panels::keywording::Chip>>)>,
+    /// The Keyword List's tick boxes, by library revision and selection.
+    keyword_ticks: Option<(u64, u64, std::sync::Arc<panels::keyword_list::Ticks>)>,
     folder_tree: Option<(u64, std::sync::Arc<Vec<lightcraft_catalog::FolderNode>>)>,
     people: Option<(u64, lightcraft_catalog::Filter, std::sync::Arc<Vec<lightcraft_catalog::Person>>)>,
     suggestions: Option<(u64, std::sync::Arc<Vec<String>>)>,
@@ -1146,6 +1169,60 @@ impl Caches {
             _ => {
                 let t = std::sync::Arc::new(cat.keyword_tree());
                 self.keyword_tree = Some((cat.revision, t.clone()));
+                t
+            }
+        }
+    }
+    /// The Keywording box's read-only names for the selection: what exported files carry
+    /// (`export`), or the keywords with those containing them.
+    pub(crate) fn keyword_names(
+        &mut self,
+        cat: &lightcraft_catalog::Catalog,
+        selection: &[lightcraft_catalog::PhotoId],
+        export: bool,
+    ) -> std::sync::Arc<Vec<panels::keywording::Chip>> {
+        let key = key_of((selection, export));
+        match &self.keyword_names {
+            Some((r, k, c)) if *r == cat.revision && *k == key => c.clone(),
+            _ => {
+                let c = std::sync::Arc::new(if export {
+                    panels::keywording::will_export(cat, selection)
+                } else {
+                    panels::keywording::with_containing(cat, selection)
+                });
+                self.keyword_names = Some((cat.revision, key, c.clone()));
+                c
+            }
+        }
+    }
+    /// The selection's keywords (the Keywording box's chips).
+    pub(crate) fn keyword_chips(
+        &mut self,
+        cat: &lightcraft_catalog::Catalog,
+        selection: &[lightcraft_catalog::PhotoId],
+    ) -> std::sync::Arc<Vec<panels::keywording::Chip>> {
+        let key = key_of(selection);
+        match &self.keyword_chips {
+            Some((r, k, c)) if *r == cat.revision && *k == key => c.clone(),
+            _ => {
+                let c = std::sync::Arc::new(panels::keywording::chips(cat, selection));
+                self.keyword_chips = Some((cat.revision, key, c.clone()));
+                c
+            }
+        }
+    }
+    /// How many selected photos have each keyword (the Keyword List's tick boxes).
+    pub(crate) fn keyword_ticks(
+        &mut self,
+        cat: &lightcraft_catalog::Catalog,
+        selection: &[lightcraft_catalog::PhotoId],
+    ) -> std::sync::Arc<panels::keyword_list::Ticks> {
+        let key = key_of(selection);
+        match &self.keyword_ticks {
+            Some((r, k, t)) if *r == cat.revision && *k == key => t.clone(),
+            _ => {
+                let t = std::sync::Arc::new(panels::keyword_list::Ticks::of(cat, selection));
+                self.keyword_ticks = Some((cat.revision, key, t.clone()));
                 t
             }
         }
