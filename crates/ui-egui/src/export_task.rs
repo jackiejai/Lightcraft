@@ -1,7 +1,8 @@
 //! Background export: the Export dialog, File → Export with Preset and Export with Previous hand
 //! their batch to a worker thread so the window stays responsive. Photos are prepared on the UI
 //! thread ([`lightcraft_engine::export::prepare_export`]: cheap, needs the session) and rendered,
-//! encoded and written on the worker; a progress panel shows the count and a Cancel button.
+//! encoded and written on the worker; its row in the activity stack shows the count, the file in
+//! progress and ✕ (issue #345).
 //!
 //! Needs [`crate::Services::write_shared`] (a thread-safe writer); without it (web) the batch runs
 //! synchronously as before.
@@ -10,12 +11,11 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, channel};
 use std::sync::{Arc, Mutex};
 
-use egui::Align2;
+use lightcraft_engine::activity::{Cancel, TaskGuard};
 use lightcraft_engine::export::{Destination, ExportOptions, PreparedExport, run_batch};
 use serde_json::{Value, json};
 
 use crate::LightcraftApp;
-use crate::theme::Tokens;
 
 pub struct ExportTask {
     pub total: usize,
@@ -23,6 +23,8 @@ pub struct ExportTask {
     pub progress: Arc<Mutex<(usize, String)>>,
     pub cancel: Arc<AtomicBool>,
     rx: Receiver<Result<Vec<Value>, String>>,
+    /// The export's row in the activity stack (`activity.cancel` sets `cancel`).
+    guard: TaskGuard,
 }
 
 impl ExportTask {
@@ -58,11 +60,13 @@ pub fn start(app: &mut LightcraftApp, items: Vec<PreparedExport>, opts: ExportOp
     std::thread::Builder::new().name("export".into()).spawn(work).map_err(|e| e.to_string())?;
     #[cfg(target_arch = "wasm32")]
     work();
-    app.export = Some(ExportTask { total, progress, cancel, rx });
+    let guard = app.session.activity.start("export", "Exporting", Cancel::Flag(cancel.clone()));
+    guard.progress(0, total as u64);
+    app.export = Some(ExportTask { total, progress, cancel, rx, guard });
     Ok(json!({"background": true, "total": total}))
 }
 
-/// Per frame: draw the progress panel; when the batch finishes, report it.
+/// Per frame: keep the activity row up to date; when the batch finishes, report it.
 pub fn poll(app: &mut LightcraftApp, ctx: &egui::Context) {
     let Some(task) = &app.export else { return };
     match task.rx.try_recv() {
@@ -95,30 +99,8 @@ pub fn poll(app: &mut LightcraftApp, ctx: &egui::Context) {
         }
         Err(std::sync::mpsc::TryRecvError::Empty) => {
             let (done, current) = task.progress.lock().map(|g| g.clone()).unwrap_or_default();
-            let (total, cancel) = (task.total, task.cancel.clone());
-            let t = Tokens::get(ctx);
-            egui::Window::new(crate::i18n::tr("Exporting"))
-                .title_bar(false)
-                .resizable(false)
-                .anchor(Align2::LEFT_BOTTOM, [16.0, -56.0])
-                .fixed_size([300.0, 64.0])
-                .show(ctx, |ui| {
-                    ui.horizontal(|ui| {
-                        ui.label(
-                            egui::RichText::new(crate::i18n::tr_format!("Exporting {} of {total}", (done + 1).min(total), total = total))
-                                .color(t.text),
-                        );
-                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            let stopping = cancel.load(Ordering::Relaxed);
-                            if crate::widgets::text_button(ui, "exportCancel", if stopping { "Stopping…" } else { "Cancel" }, false).clicked() {
-                                cancel.store(true, Ordering::Relaxed);
-                            }
-                        });
-                    });
-                    ui.add(egui::ProgressBar::new(done as f32 / total.max(1) as f32).desired_width(280.0));
-                    ui.label(egui::RichText::new(current).size(11.0).color(t.text_dim));
-                });
-            ctx.request_repaint_after(std::time::Duration::from_millis(100));
+            task.guard.progress(done as u64, task.total as u64);
+            task.guard.detail(&current);
         }
         Err(std::sync::mpsc::TryRecvError::Disconnected) => {
             app.export = None;

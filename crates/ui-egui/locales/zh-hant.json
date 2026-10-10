@@ -1734,5 +1734,17 @@
   "Pending photo action cancelled": "Pending photo action cancelled",
   "Pending photo action cancelled because its library or photo changed": "Pending photo action cancelled because its library or photo changed",
   "ONNX model": "ONNX model",
-  "commercial use subject to GPL conditions": "commercial use subject to GPL conditions"
+  "commercial use subject to GPL conditions": "commercial use subject to GPL conditions",
+  "Show less": "收合",
+  "Quit while tasks are running?": "要在工作執行時結束嗎？",
+  "Reading folder": "正在讀取檔案夾",
+  "Scanning folder": "正在掃描檔案夾",
+  "Building previews": "正在建立預覽",
+  "Building smart previews": "正在建立智慧型預覽",
+  "Discarding smart previews": "正在捨棄智慧型預覽",
+  "Importing Lightroom catalog": "正在匯入 Lightroom 目錄",
+  "Reading Lightroom catalog": "正在讀取 Lightroom 目錄",
+  "Merging": "正在合併",
+  "Downloading model": "正在下載模型",
+  "Finding faces": "正在尋找臉孔"
 }

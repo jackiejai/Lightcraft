@@ -206,5 +206,12 @@
   "In line for AI Denoise ({ahead} ahead)…": "In line for AI Denoise ({ahead} ahead)…",
   "Running on {}.": "Running on {}.",
   "{file} · {size}": "{file} · {size}",
-  "•  {assumption}": "•  {assumption}"
+  "•  {assumption}": "•  {assumption}",
+  "{done} of {total}": "{done} de {total}",
+  "{done} of {total} MB": "{done} de {total} MB",
+  "{pct} %": "{pct} %",
+  "+{n} more": "+{n} más",
+  "1 task is still running: {names}. Quitting stops it.": "1 tarea sigue en curso: {names}. Salir la detiene.",
+  "{n} tasks are still running: {names}. Quitting stops them.": "{n} tareas siguen en curso: {names}. Salir las detiene.",
+  "{what} merge cancelled": "Combinación {what} cancelada"
 }

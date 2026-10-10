@@ -1734,5 +1734,17 @@
   "Pending photo action cancelled": "Pending photo action cancelled",
   "Pending photo action cancelled because its library or photo changed": "Pending photo action cancelled because its library or photo changed",
   "ONNX model": "ONNX model",
-  "commercial use subject to GPL conditions": "commercial use subject to GPL conditions"
+  "commercial use subject to GPL conditions": "commercial use subject to GPL conditions",
+  "Show less": "表示を減らす",
+  "Quit while tasks are running?": "タスクの実行中に終了しますか？",
+  "Reading folder": "フォルダーを読み込み中",
+  "Scanning folder": "フォルダーをスキャン中",
+  "Building previews": "プレビューを作成中",
+  "Building smart previews": "スマートプレビューを作成中",
+  "Discarding smart previews": "スマートプレビューを破棄中",
+  "Importing Lightroom catalog": "Lightroom カタログを読み込み中",
+  "Reading Lightroom catalog": "Lightroom カタログを読み取り中",
+  "Merging": "合成中",
+  "Downloading model": "モデルをダウンロード中",
+  "Finding faces": "顔を検索中"
 }

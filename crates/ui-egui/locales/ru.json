@@ -1407,5 +1407,18 @@
   "Pending photo action cancelled": "Pending photo action cancelled",
   "Pending photo action cancelled because its library or photo changed": "Pending photo action cancelled because its library or photo changed",
   "ONNX model": "ONNX model",
-  "commercial use subject to GPL conditions": "commercial use subject to GPL conditions"
+  "commercial use subject to GPL conditions": "commercial use subject to GPL conditions",
+  "Show less": "Свернуть",
+  "Quit while tasks are running?": "Выйти, пока выполняются задачи?",
+  "Reading folder": "Чтение папки",
+  "Scanning folder": "Сканирование папки",
+  "Building previews": "Создание просмотров",
+  "Building smart previews": "Создание смарт-просмотров",
+  "Discarding smart previews": "Удаление смарт-просмотров",
+  "Importing Lightroom catalog": "Импорт каталога Lightroom",
+  "Reading Lightroom catalog": "Чтение каталога Lightroom",
+  "Merging": "Слияние",
+  "Downloading model": "Загрузка модели",
+  "Finding faces": "Поиск лиц",
+  "Quit Anyway": "Всё равно выйти"
 }

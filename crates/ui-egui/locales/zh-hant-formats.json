@@ -206,5 +206,12 @@
   "In line for AI Denoise ({ahead} ahead)…": "In line for AI Denoise ({ahead} ahead)…",
   "Running on {}.": "Running on {}.",
   "{file} · {size}": "{file} · {size}",
-  "•  {assumption}": "•  {assumption}"
+  "•  {assumption}": "•  {assumption}",
+  "{done} of {total}": "{done}／{total}",
+  "{done} of {total} MB": "{done}／{total} MB",
+  "{pct} %": "{pct}%",
+  "+{n} more": "還有 {n} 項",
+  "1 task is still running: {names}. Quitting stops it.": "仍有 1 個工作在執行：{names}。結束將停止它。",
+  "{n} tasks are still running: {names}. Quitting stops them.": "仍有 {n} 個工作在執行：{names}。結束將停止它們。",
+  "{what} merge cancelled": "已取消{what}合併"
 }

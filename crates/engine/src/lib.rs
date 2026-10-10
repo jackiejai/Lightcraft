@@ -14,6 +14,7 @@
 #[cfg(not(feature = "denoise"))]
 extern crate lightcraft_denoise_core as lightcraft_denoise;
 
+pub mod activity;
 pub mod availability;
 mod camera_preview;
 pub mod camera_profiles;
@@ -252,6 +253,9 @@ pub struct Session {
     pub before: std::collections::HashMap<PhotoId, Arc<DevelopSettings>>,
     /// File probes from the last import review (`library.importPreview`), reused by the import.
     pub import_probes: std::collections::HashMap<String, media::ProbeInfo>,
+    /// Background tasks in flight (imports, exports, preview builds…), for the activity stack and
+    /// `activity.list` / `activity.cancel`.
+    pub activity: activity::Activity,
     /// The last (or running) Build Previews.
     pub preview_build: Option<std::sync::Arc<cmd::previews::PreviewBuild>>,
     /// Develop defaults applied on import (persisted in prefs.json).
@@ -334,6 +338,7 @@ impl Session {
             recent_keywords: Vec::new(),
             before: Default::default(),
             import_probes: Default::default(),
+            activity: Default::default(),
             preview_build: None,
             import_defaults: import::ImportDefaults::default(),
             cache_mb: 0,

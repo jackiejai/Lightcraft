@@ -2,6 +2,15 @@
 
 ## October 2026
 
+### Activity stack
+- Long-running tasks show in one place, top left under the top bar, as in Lightroom Classic (issue #345): imports and
+  folder scans, exports, Build / Smart Previews, Lightroom catalog import, Photo Merge, model downloads, the face scan,
+  AI Denoise and Find Missing Photos. Each row has the task's name, a progress bar, the count and what it is working
+  on; ✕ stops the tasks that can stop. Three rows show, then "+N more". The separate export panel and the progress
+  windows and toasts are gone.
+- Quitting while a task that can be stopped is running asks first ("Quit Anyway" stops it).
+- Agents list and stop tasks with `activity.list` and `activity.cancel`; `ui.inspect` reports them as `activity`.
+
 ### Masking
 - Drag anywhere inside the selected radial gradient's ellipse to move it, including rotated
   ellipses and radial components in compound masks. Edge and rotation handles keep their existing
