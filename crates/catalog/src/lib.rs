@@ -15,6 +15,7 @@
 
 pub mod dates;
 pub mod folders;
+pub mod ids;
 pub mod journal;
 pub mod keywords;
 pub mod local;
@@ -242,6 +243,11 @@ pub struct Catalog {
     /// Increments on every applied op.
     #[serde(skip)]
     pub revision: u64,
+    /// Where new photo/album/stack ids come from (see [`ids`]). Not catalog data: never saved,
+    /// ignored by equality. `Clone` copies the generator state, so a clone draws the same ids as the
+    /// original: re-seed ([`Catalog::seed_ids`]) a clone that will allocate independently.
+    #[serde(skip)]
+    ids: ids::IdGen,
 }
 
 impl Catalog {
@@ -251,20 +257,25 @@ impl Catalog {
 
     // ---- ids
 
+    /// A new photo id: random in `[1, 2^53)` and not used by this catalog (see [`ids`]).
     pub fn alloc_photo_id(&mut self) -> PhotoId {
-        let id = PhotoId(self.next_photo.max(1));
-        self.next_photo = id.0 + 1;
-        id
+        let photos = &self.photos;
+        PhotoId(self.ids.draw(|v| photos.contains_key(&PhotoId(v))))
     }
+
     pub fn alloc_album_id(&mut self) -> AlbumId {
-        let id = AlbumId(self.next_album.max(1));
-        self.next_album = id.0 + 1;
-        id
+        let albums = &self.albums;
+        AlbumId(self.ids.draw(|v| albums.contains_key(&AlbumId(v))))
     }
+
     pub fn alloc_stack_id(&mut self) -> StackId {
-        let id = StackId(self.next_stack.max(1));
-        self.next_stack = id.0 + 1;
-        id
+        let stacks = &self.stacks;
+        StackId(self.ids.draw(|v| stacks.contains_key(&StackId(v))))
+    }
+
+    /// Make the ids this catalog draws next reproducible (tests, benchmarks).
+    pub fn seed_ids(&mut self, seed: u64) {
+        self.ids = ids::IdGen::seeded(seed);
     }
 
     // ---- reads
